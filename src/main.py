@@ -30,7 +30,7 @@ class MachineState:
         print("Random Modifier: " + random_modifier.name)
 
         has_queue_state_changed = self.queue_state.next_state(
-            random_modifier, self.pod_state.total_pods)
+            random_modifier, self.pod_state)
         if has_queue_state_changed:
             self.pod_state.next_state(random_modifier)
 
@@ -53,7 +53,7 @@ class MachineState:
 
 
 def main():
-    pod_state: PodState = PodState(cpu=100, memory=200, total_pods=1)
+    pod_state: PodState = PodState(cpu=100, memory=200, total_pods=3)
     queue_state: QueueState = QueueState(
         messages_queued=100, ack_rate=10, publish_rate=1)
 

@@ -1,5 +1,6 @@
 
 import random
+from pod_state import PodState
 
 from state_modifier_enum import StateModifierEnum
 
@@ -29,7 +30,7 @@ class QueueState:
         throughput = self.publish_rate - self.ack_rate
         return throughput
 
-    def next_state(self, modifier_enum: StateModifierEnum, total_pods: int) -> bool:
+    def next_state(self, modifier_enum: StateModifierEnum, pod_state: PodState) -> bool:
         messages_throughput = self.calculate_throughput()
 
         has_current_state_changed = False
@@ -44,8 +45,8 @@ class QueueState:
         next_state_switcher = {
             StateModifierEnum.HIGH_INPUT: lambda: self.handle_input_modifier(is_high=True),
             StateModifierEnum.LOW_INPUT: lambda: self.handle_input_modifier(is_high=False),
-            StateModifierEnum.HIGH_OUTPUT: lambda: self.handle_output_modifier(total_pods, is_high=True),
-            StateModifierEnum.LOW_OUTPUT: lambda: self.handle_output_modifier(total_pods, is_high=False),
+            StateModifierEnum.HIGH_OUTPUT: lambda: self.handle_output_modifier(pod_state, is_high=True),
+            StateModifierEnum.LOW_OUTPUT: lambda: self.handle_output_modifier(pod_state, is_high=False),
         }
 
         fn_modify_state = next_state_switcher.get(modifier_enum)
@@ -63,12 +64,17 @@ class QueueState:
             self.publish_rate = generate_normal_random(
                 mean=5, stddev=10, offset=0, limit=20)
 
-    def handle_output_modifier(self, total_pods: int, is_high: bool):
-        mean_by_total_pods = total_pods * 3
+    def handle_output_modifier(self, pod_state: PodState, is_high: bool):
+        pod_ack_in_state = round(
+            pod_state.total_pods * 2 + (pod_state.cpu / 100))
 
         if is_high:
+            mean = pod_ack_in_state + 30
+            limit = pod_ack_in_state + 100
             self.ack_rate = generate_normal_random(
-                mean=mean_by_total_pods+35, stddev=15, offset=20, limit=100)
+                mean=mean, stddev=10, offset=20, limit=limit)
         else:
+            mean = pod_ack_in_state + 5
+            limit = pod_ack_in_state + 20
             self.ack_rate = generate_normal_random(
-                mean=mean_by_total_pods+5, stddev=10, offset=0, limit=20)
+                mean=mean, stddev=10, offset=0, limit=limit)
